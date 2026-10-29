@@ -15,6 +15,12 @@
     canvas {
       display: block;
       border-radius: 6px;
+      /* Scale the 960x640 canvas down (keeping its shape) when the window is smaller.
+         Without this, a short window crops the top and the page can't scroll,
+         because input.js blocks Space/arrow scrolling. Only the display size changes;
+         the game still draws at 960x640, and it's keyboard-only, so no click math breaks. */
+      max-width: 100vw;
+      max-height: 100vh;
     }
   </style>
 </head>
