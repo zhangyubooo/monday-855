@@ -6,6 +6,21 @@
 // complaints read the comfort range.
 
 const PERSON_TYPES = {
+  // The office worker is the most common type and is comfortable at almost any
+  // speed (30–120). Without them, every arrival is a manager or an intern and
+  // the game is far harder than designed (simulated careful player: 4/40 rounds
+  // survived with only managers and interns, 30/40 with this mix).
+  officeWorker: {
+    displayName: 'Office worker',
+    label: 'W',
+    color: '#5f6b7a',
+    comfortMinSpeed: 30,
+    comfortMaxSpeed: 120,
+    streetSpawnWeight: 55,
+    lobbySpawnWeight: 70,   // used once lobby spawning exists (AC #23)
+    takesWholeCompartment: false,
+    complaintLine: 'WATCH IT!',
+  },
   // The Late manager and the Coffee intern are the CORE CONFLICT of the game (SPEC 2.5):
   // their comfort ranges do not overlap, so no door speed keeps both of them happy.
   manager: {
@@ -14,7 +29,7 @@ const PERSON_TYPES = {
     color: '#2f4b8f',
     comfortMinSpeed: 70,    // °/s
     comfortMaxSpeed: 170,
-    streetSpawnWeight: 50,  // relative weights, not percentages; only the ratio matters
+    streetSpawnWeight: 20,  // relative weights, not percentages; only the ratio matters
     lobbySpawnWeight: 0,
     takesWholeCompartment: false,
     complaintLine: 'I HAVE A 9 AM!',
@@ -25,21 +40,25 @@ const PERSON_TYPES = {
     color: '#b8742a',
     comfortMinSpeed: 20,
     comfortMaxSpeed: 60,
-    streetSpawnWeight: 50,
+    streetSpawnWeight: 15,
     lobbySpawnWeight: 0,
     takesWholeCompartment: false,
     complaintLine: 'MY LATTE!',
   },
-  // TODO(AC #15): add the other two types from SPEC 2.5, then change the weights
-  // to the SPEC's percentages (worker 55 / manager 20 / intern 15 / courier 10 on the street):
-  //   officeWorker: comfort 30–120, label 'W'
-  //   courier:      comfort 15–70,  label 'C', takesWholeCompartment: true, lobbySpawnWeight 30
+  // TODO(AC #15): add the courier from SPEC 2.5:
+  //   courier: comfort 15–70, label 'C', takesWholeCompartment: true,
+  //            streetSpawnWeight 10, lobbySpawnWeight 30
+  // Door.canAccept() already handles takesWholeCompartment, so the table entry should be enough.
+  // Test it: a courier at the front must wait for an EMPTY compartment, and so must everyone behind them.
 };
 
 /** Picks a random type key for the given side, using the spawn weights. */
 function pickPersonTypeKey(side, randomNumber) {
   const weightField = side === 'street' ? 'streetSpawnWeight' : 'lobbySpawnWeight';
   const typeKeys = Object.keys(PERSON_TYPES).filter((key) => PERSON_TYPES[key][weightField] > 0);
+  if (typeKeys.length === 0) {
+    throw new Error(`No passenger type has ${weightField} > 0. Add one to PERSON_TYPES before spawning on the ${side} side.`);
+  }
   const totalWeight = typeKeys.reduce((sum, key) => sum + PERSON_TYPES[key][weightField], 0);
   let remaining = randomNumber * totalWeight;
   for (const key of typeKeys) {

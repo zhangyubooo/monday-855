@@ -12,9 +12,9 @@ const root = path.join(__dirname, '..');
 const ctx = vm.createContext({ Math, console });
 let code = '';
 for (const f of ['constants', 'door', 'person', 'queue', 'game']) code += fs.readFileSync(path.join(root, 'js', f + '.js'), 'utf8') + '\n';
-code += 'this.api = { Game, Door, Person, Queue, PERSON_TYPES, angleDistance };';
+code += 'this.api = { Game, Door, Person, Queue, PERSON_TYPES, angleDistance, pickPersonTypeKey };';
 vm.runInContext(code, ctx);
-const { Game, Door, Person, PERSON_TYPES, angleDistance } = ctx.api;
+const { Game, Door, Person, PERSON_TYPES, angleDistance, pickPersonTypeKey } = ctx.api;
 
 let failures = 0;
 function check(name, cond, extra = '') { console.log((cond ? 'PASS ' : 'FAIL ') + name + (extra ? '  [' + extra + ']' : '')); if (!cond) failures++; }
@@ -85,9 +85,11 @@ function run(game, seconds, controls) { for (let i = 0; i < Math.round(seconds /
 { const m = PERSON_TYPES.manager, i = PERSON_TYPES.intern; let any = false;
   for (let s = 0; s <= 200; s++) if (s >= m.comfortMinSpeed && s <= m.comfortMaxSpeed && s >= i.comfortMinSpeed && s <= i.comfortMaxSpeed) any = true;
   check('AC14 no speed satisfies both', !any);
-  let seen = new Set(); const g = new Game(); run(g, 60, { ...none, isStreetGateHeld: true });
-  for (const p of g.streetQueue.people) seen.add(p.typeKey);
-  check('AC14 both types spawn', seen.has('manager') && seen.has('intern'), [...seen].join(',')); }
+  // Sample the street spawn picker directly so the check doesn't depend on one round's luck.
+  const counts = {};
+  for (let k = 0; k < 1000; k++) { const key = pickPersonTypeKey('street', Math.random()); counts[key] = (counts[key] || 0) + 1; }
+  check('AC14 both conflict types spawn on the street', counts.manager > 0 && counts.intern > 0, JSON.stringify(counts));
+  check('AC15 (partial) office workers spawn too, and are the most common', counts.officeWorker > counts.manager && counts.officeWorker > counts.intern); }
 
 // AC24: third complaint -> fired
 { const g = new Game(() => 0.99); for (let i = 0; i < 60 * 60 && g.phase === 'playing'; i++) g.update(DT, push);

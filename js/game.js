@@ -89,6 +89,8 @@ class Game {
     }
     // TODO(AC #23): lobby-side spawns, one every LOBBY_SPAWN_INTERVAL seconds, added to
     // this.lobbyQueue with fromSide 'lobby'. Exiting already works in both directions.
+    // Per SPEC 2.5 only office workers (70%) and couriers (30%) leave from the lobby.
+    // Office workers exist; add the courier (AC #15) first, or every lobby person will be a worker.
   }
 
   /** Seconds between street arrivals right now. */
